@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<title>Workout Tracker</title>
+<style>
+  @keyframes checkPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes progressGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(74, 222, 128, 0.3); }
+    50% { box-shadow: 0 0 16px rgba(74, 222, 128, 0.6); }
+  }
+  @keyframes confettiBurst {
+    0% { opacity: 1; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(1.5); }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro', system-ui, sans-serif;
+    background: #0a0a0a;
+    color: #f5f5f5;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) 0 140px 0;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    padding: 24px 20px 8px;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(to bottom, #0a0a0a 80%, transparent);
+    z-index: 20;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .week-label {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .week-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+  }
+  .week-progress-bar {
+    width: 120px;
+    height: 3px;
+    background: #1a1a1a;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .week-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ade80, #22d3ee);
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 14px 16px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 88px;
+    z-index: 15;
+    background: linear-gradient(to bottom, #0a0a0a 70%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex: 1;
+    min-width: 44px;
+    padding: 10px 6px;
+    border-radius: 14px;
+    background: #151515;
+    color: #555;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    position: relative;
+  }
+  .tab.today::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #4ade80;
+  }
+  .tab.active {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+    box-shadow: 0 4px 20px rgba(255,255,255,0.15);
+  }
+  .tab.active.today::after { background: #000; }
+  .tab.completed {
+    background: linear-gradient(135deg, #0a2a14, #0a1a10);
+    color: #4ade80;
+    border-color: #1a3a24;
+  }
+  .tab.completed.active {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #000;
+    border-color: #4ade80;
+    box-shadow: 0 4px 20px rgba(74, 222, 128, 0.3);
+  }
+
+  /* ── Content Area ── */
+  .content-area {
+    padding: 0 16px;
+    animation: fadeSlideIn 0.3s ease;
+  }
+
+  .day-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 20px 4px 6px;
+  }
+  .day-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .day-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .day-subtitle {
+    font-size: 14px;
+    color: #555;
+    margin: 0 4px 18px;
+    font-weight: 500;
+  }
+
+  /* ── Progress ── */
+  .progress-container {
+    background: #131313;
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    border: 1px solid #1e1e1e;
+  }
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .progress-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+  }
+  .progress-pct {
+    font-size: 22px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #4ade80, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .progress-pct.zero {
+    background: none;
+    -webkit-text-fill-color: #333;
+  }
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ade80, #22d3ee);
+    border-radius: 4px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .progress-fill.complete {
+    animation: progressGlow 2s ease-in-out infinite;
+    border-radius: 4px;
+  }
+  .progress-sets {
+    font-size: 12px;
+    color: #444;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  /* ── Exercise Cards ── */
+  .exercise {
+    background: #131313;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 10px;
+    border: 1px solid #1e1e1e;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .exercise.all-done {
+    border-color: #1a3a24;
+    background: linear-gradient(135deg, #0d1a12, #131313);
+  }
+  .exercise-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .exercise-name {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .exercise-check {
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .exercise.all-done .exercise-check { opacity: 1; }
+  .exercise-detail {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+
+  .sets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .set-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    border: 2px solid #252525;
+    background: #1a1a1a;
+    color: #555;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .set-btn:active { transform: scale(0.92); }
+  .set-btn.done {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    border-color: #4ade80;
+    color: #000;
+    box-shadow: 0 2px 12px rgba(74, 222, 128, 0.25);
+    animation: checkPop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .set-btn.done::after {
+    content: '\2713';
+    position: absolute;
+    font-size: 18px;
+    font-weight: 800;
+  }
+  .set-btn.done span { opacity: 0; }
+
+  /* ── Recovery Card ── */
+  .recovery-card {
+    background: linear-gradient(135deg, #131318, #0d1117);
+    border-radius: 20px;
+    padding: 40px 24px;
+    text-align: center;
+    margin-top: 20px;
+    border: 1px solid #1e1e2a;
+    position: relative;
+    overflow: hidden;
+  }
+  .recovery-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+  }
+  .recovery-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .recovery-card h3 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+  .recovery-card p {
+    color: #666;
+    font-size: 15px;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  /* ── Buttons ── */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    padding-bottom: 20px;
+  }
+  .action-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-btn:active { transform: scale(0.97); }
+  .action-btn.reset-day {
+    background: #151515;
+    color: #666;
+    border: 1px solid #222;
+  }
+  .action-btn.reset-week {
+    background: #1a0a0a;
+    color: #f87171;
+    border: 1px solid #2a1515;
+  }
+
+  /* ── Completion Banner ── */
+  .complete-banner {
+    background: linear-gradient(135deg, #0a2a14, #0a1a10);
+    border: 1px solid #1a3a24;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 14px;
+    animation: fadeSlideIn 0.4s ease;
+  }
+  .complete-banner .emoji { font-size: 32px; margin-bottom: 8px; }
+  .complete-banner h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #4ade80;
+    margin-bottom: 4px;
+  }
+  .complete-banner p {
+    font-size: 13px;
+    color: #4a9a6a;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Workout</h1>
+  <div class="week-label" id="weekLabel"></div>
+  <div class="week-progress">
+    <span id="weekProgressText"></span>
+    <div class="week-progress-bar"><div class="week-progress-fill" id="weekProgressFill"></div></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="content-area" id="content"></div>
+
+<script>
+const DAYS = [
+  {
+    key: 'monday', label: 'Mon', title: 'Push', subtitle: 'Chest / Shoulders / Triceps',
+    exercises: [
+      { name: 'Incline DB Press', sets: 4, reps: '8-12' },
+      { name: 'Flat Bench Press', sets: 3, reps: '6-10' },
+      { name: 'Seated Shoulder Press', sets: 3, reps: '8-12' },
+      { name: 'Lateral Raises', sets: 4, reps: '12-20' },
+      { name: 'Tricep Extension', sets: 3, reps: '8-12' },
+      { name: 'Pec Deck', sets: 3, reps: '12-15' },
+    ]
+  },
+  {
+    key: 'tuesday', label: 'Tue', title: 'Active Recovery', subtitle: 'CrossFit with Mom',
+    recovery: true
+  },
+  {
+    key: 'wednesday', label: 'Wed', title: 'Pull', subtitle: 'Back / Biceps',
+    exercises: [
+      { name: 'Pull Ups', sets: 4, reps: '6-10' },
+      { name: 'Lat Pulldown', sets: 3, reps: '8-12' },
+      { name: 'Chest Supported Row', sets: 3, reps: '8-12' },
+      { name: 'Single Arm DB Row', sets: 3, reps: '10-12' },
+      { name: 'Reverse Pec Deck', sets: 4, reps: '12-20' },
+      { name: 'Curls', sets: 3, reps: '10-12' },
+    ]
+  },
+  {
+    key: 'thursday', label: 'Thu', title: 'Active Recovery', subtitle: 'CrossFit with Mom',
+    recovery: true
+  },
+  {
+    key: 'friday', label: 'Fri', title: 'Shoulders & Arms', subtitle: 'Delts / Triceps / Biceps',
+    exercises: [
+      { name: 'DB Shoulder Press', sets: 4, reps: '8-12' },
+      { name: 'Lateral Raises', sets: 5, reps: '15-20' },
+      { name: 'Reverse Pec Deck', sets: 4, reps: '15-20' },
+      { name: 'Upright Row', sets: 3, reps: '10-12' },
+      { name: 'Skull Crushers', sets: 3, reps: '10-12' },
+      { name: 'Curls', sets: 3, reps: '10-12' },
+    ]
+  },
+  {
+    key: 'saturday', label: 'Sat', title: 'Legs', subtitle: 'Quads / Hamstrings / Calves',
+    exercises: [
+      { name: 'Squat', sets: 4, reps: '6-10' },
+      { name: 'Leg Extensions', sets: 3, reps: '8-12' },
+      { name: 'Leg Press', sets: 3, reps: '10-15' },
+      { name: 'Hamstring Curls', sets: 3, reps: '10-15' },
+      { name: 'Calf Raises', sets: 3, reps: '12-20' },
+      { name: 'Abductors (Out)', sets: 3, reps: '10-12' },
+      { name: 'Adductors (In)', sets: 3, reps: '10-12' },
+    ]
+  },
+  {
+    key: 'sunday', label: 'Sun', title: 'Upper', subtitle: 'Back / Chest / Shoulders',
+    exercises: [
+      { name: 'Pull Ups', sets: 3, reps: '6-10' },
+      { name: 'Lat Pulldown', sets: 3, reps: '10-12' },
+      { name: 'Incline DB Bench', sets: 3, reps: '8-12' },
+      { name: 'Single Arm DB Row', sets: 3, reps: '8-12' },
+      { name: 'Lateral Raises', sets: 3, reps: '15-20' },
+    ]
+  },
+];
+
+const jsDay = new Date().getDay();
+const todayIndex = jsDay === 0 ? 6 : jsDay - 1;
+
+function getState() {
+  try { return JSON.parse(localStorage.getItem('workout_v2')) || {}; } catch { return {}; }
+}
+function saveState(s) { localStorage.setItem('workout_v2', JSON.stringify(s)); }
+
+function getWeekId() {
+  const now = new Date();
+  const jan1 = new Date(now.getFullYear(), 0, 1);
+  const days = Math.floor((now - jan1) / 86400000);
+  return `${now.getFullYear()}-W${Math.ceil((days + jan1.getDay() + 1) / 7)}`;
+}
+
+function checkWeekReset(state) {
+  const wk = getWeekId();
+  if (state._week !== wk) {
+    const fresh = { _week: wk };
+    saveState(fresh);
+    return fresh;
+  }
+  return state;
+}
+
+let state = checkWeekReset(getState());
+let activeDay = todayIndex;
+
+function getDayProgress(dayKey) {
+  const day = DAYS.find(d => d.key === dayKey);
+  if (!day || day.recovery) return { done: 0, total: 0 };
+  const total = day.exercises.reduce((s, e) => s + e.sets, 0);
+  const done = (state[dayKey] || []).filter(Boolean).length;
+  return { done, total };
+}
+
+function getWeekProgress() {
+  let done = 0, total = 0;
+  DAYS.forEach(d => {
+    if (d.recovery) return;
+    const p = getDayProgress(d.key);
+    done += p.done;
+    total += p.total;
+  });
+  return { done, total };
+}
+
+function getExerciseProgress(dayKey, startIdx, numSets) {
+  const sets = state[dayKey] || [];
+  let done = 0;
+  for (let i = startIdx; i < startIdx + numSets; i++) {
+    if (sets[i]) done++;
+  }
+  return { done, total: numSets };
+}
+
+function render() {
+  const tabsEl = document.getElementById('tabs');
+  const contentEl = document.getElementById('content');
+  const weekLabel = document.getElementById('weekLabel');
+
+  const now = new Date();
+  weekLabel.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  // Week progress
+  const wp = getWeekProgress();
+  const wpPct = wp.total > 0 ? Math.round((wp.done / wp.total) * 100) : 0;
+  document.getElementById('weekProgressText').textContent = `Week ${wpPct}%`;
+  document.getElementById('weekProgressFill').style.width = wpPct + '%';
+
+  // Tabs
+  tabsEl.innerHTML = DAYS.map((d, i) => {
+    const p = getDayProgress(d.key);
+    const isComplete = !d.recovery && p.total > 0 && p.done === p.total;
+    const classes = [
+      'tab',
+      i === activeDay ? 'active' : '',
+      i === todayIndex ? 'today' : '',
+      isComplete ? 'completed' : ''
+    ].filter(Boolean).join(' ');
+    return `<button class="${classes}" onclick="switchDay(${i})">${d.label}</button>`;
+  }).join('');
+
+  const day = DAYS[activeDay];
+
+  if (day.recovery) {
+    contentEl.innerHTML = `
+      <div class="day-header">
+        <div class="day-title">${day.title}</div>
+        <div class="day-badge">Recovery</div>
+      </div>
+      <div class="day-subtitle">${day.subtitle}</div>
+      <div class="recovery-card">
+        <span class="recovery-icon">\u{1F9D8}</span>
+        <h3>Active Recovery Day</h3>
+        <p>CrossFit with Mom today.<br>Stay moving, let the muscles recover.</p>
+      </div>`;
+    return;
+  }
+
+  const p = getDayProgress(day.key);
+  const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
+  const isComplete = p.done === p.total && p.total > 0;
+  const sets = state[day.key] || [];
+
+  let html = `
+    <div class="day-header">
+      <div class="day-title">${day.title}</div>
+      <div class="day-badge">${day.exercises.length} exercises</div>
+    </div>
+    <div class="day-subtitle">${day.subtitle}</div>`;
+
+  if (isComplete) {
+    html += `
+      <div class="complete-banner">
+        <div class="emoji">\u{1F525}</div>
+        <h3>Workout Complete!</h3>
+        <p>All ${p.total} sets crushed. Great work.</p>
+      </div>`;
+  }
+
+  html += `
+    <div class="progress-container">
+      <div class="progress-top">
+        <span class="progress-label">${p.done} of ${p.total} sets</span>
+        <span class="progress-pct ${pct === 0 ? 'zero' : ''}">${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${isComplete ? 'complete' : ''}" style="width:${pct}%"></div></div>
+    </div>`;
+
+  let setIdx = 0;
+  day.exercises.forEach((ex) => {
+    const ep = getExerciseProgress(day.key, setIdx, ex.sets);
+    const allDone = ep.done === ep.total;
+    html += `<div class="exercise ${allDone ? 'all-done' : ''}">
+      <div class="exercise-top">
+        <div class="exercise-name">${ex.name}</div>
+        <div class="exercise-check">\u2713</div>
+      </div>
+      <div class="exercise-detail">${ex.sets} sets \u00d7 ${ex.reps} reps</div>
+      <div class="sets">`;
+    for (let s = 0; s < ex.sets; s++) {
+      const done = sets[setIdx] ? 'done' : '';
+      html += `<button class="set-btn ${done}" onclick="toggleSet('${day.key}',${setIdx})"><span>${s + 1}</span></button>`;
+      setIdx++;
+    }
+    html += `</div></div>`;
+  });
+
+  html += `
+    <div class="actions">
+      <button class="action-btn reset-day" onclick="resetDay('${day.key}')">Reset Day</button>
+      <button class="action-btn reset-week" onclick="resetWeek()">Reset Week</button>
+    </div>`;
+
+  contentEl.innerHTML = html;
+}
+
+function switchDay(i) {
+  activeDay = i;
+  const content = document.getElementById('content');
+  content.style.animation = 'none';
+  content.offsetHeight;
+  content.style.animation = 'fadeSlideIn 0.25s ease';
+  render();
+}
+
+function toggleSet(dayKey, idx) {
+  if (!state[dayKey]) {
+    const day = DAYS.find(d => d.key === dayKey);
+    const total = day.exercises.reduce((s, e) => s + e.sets, 0);
+    state[dayKey] = new Array(total).fill(false);
+  }
+  state[dayKey][idx] = !state[dayKey][idx];
+  saveState(state);
+  render();
+}
+
+function resetDay(dayKey) {
+  delete state[dayKey];
+  saveState(state);
+  render();
+}
+
+function resetWeek() {
+  if (confirm('Reset all progress for this week?')) {
+    state = { _week: getWeekId() };
+    saveState(state);
+    render();
+  }
+}
+
+render();
+</script>
+</body>
+</html>
