@@ -606,10 +606,24 @@
 
   .scan-foot {
     padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
-    display: flex;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
   }
+  .scan-back {
+    grid-column: 1;
+    justify-self: start;
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 22px;
+    cursor: pointer;
+  }
+  .scan-back:active { transform: scale(0.95); }
   .capture-btn {
     width: 72px;
     height: 72px;
@@ -767,7 +781,7 @@
 <div class="scan-modal" id="scanModal">
   <div class="scan-head">
     <div class="scan-title" id="scanTitle">Scan</div>
-    <button class="scan-close" id="scanClose">\u2715</button>
+    <button class="scan-close" id="scanClose">&#x2715;</button>
   </div>
   <div class="scan-video-wrap">
     <video class="scan-video" id="scanVideo" autoplay playsinline muted></video>
@@ -777,11 +791,12 @@
     </div>
     <div class="scan-status" id="scanStatus">
       <div class="spinner"></div>
-      <div id="scanStatusText">Loading\u2026</div>
+      <div id="scanStatusText">Loading&#x2026;</div>
       <div class="status-sub" id="scanStatusSub"></div>
     </div>
   </div>
   <div class="scan-foot">
+    <button class="scan-back" id="scanBack">&#x2190; Back</button>
     <button class="capture-btn" id="captureBtn"></button>
   </div>
 </div>
@@ -789,7 +804,7 @@
 <!-- ── LEVEL UP MODAL ── -->
 <div class="levelup-modal" id="levelupModal">
   <div class="levelup-card">
-    <div class="star">\u2B50</div>
+    <div class="star">&#x2B50;</div>
     <h2>Level <span id="levelupNum">2</span></h2>
     <p id="levelupMsg">Keep going.</p>
     <button id="levelupClose">Nice</button>
@@ -833,10 +848,10 @@ const MORNING_TASKS = [
     name: 'Skin care',
     icon: '\u{1F9F4}',
     hint: 'Wash + moisturize',
-    facingMode: 'user',
-    prompt: 'Take a close-up selfie',
-    positive: 'a close-up selfie of a person\u2019s face',
-    labels: ['a close-up selfie of a person\u2019s face', 'a wide view of a room', 'a random object', 'a blank wall']
+    facingMode: 'environment',
+    prompt: 'Show a pump of lotion in your palm',
+    positive: 'a dollop of white lotion or cream in a hand\u2019s palm',
+    labels: ['a dollop of white lotion or cream in a hand\u2019s palm', 'an empty open hand', 'a random object', 'a blank wall']
   },
   {
     id: 'calisthenics',
@@ -1129,6 +1144,7 @@ let currentStream = null;
 let currentTask = null;
 
 document.getElementById('scanClose').onclick = closeScan;
+document.getElementById('scanBack').onclick = closeScan;
 
 function closeScan() {
   if (currentStream) {
