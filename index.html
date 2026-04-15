@@ -2,30 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Workout">
-<title>Workout Tracker</title>
+<meta name="apple-mobile-web-app-title" content="Routine">
+<meta name="theme-color" content="#0a0a0a">
+<title>Routine</title>
 <style>
-  @keyframes checkPop {
-    0% { transform: scale(1); }
-    40% { transform: scale(1.25); }
-    100% { transform: scale(1); }
-  }
-  @keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes progressGlow {
-    0%, 100% { box-shadow: 0 0 8px rgba(74, 222, 128, 0.3); }
-    50% { box-shadow: 0 0 16px rgba(74, 222, 128, 0.6); }
-  }
-  @keyframes confettiBurst {
-    0% { opacity: 1; transform: scale(0); }
-    50% { opacity: 1; transform: scale(1.2); }
-    100% { opacity: 0; transform: scale(1.5); }
-  }
+  @keyframes checkPop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes progressGlow { 0%, 100% { box-shadow: 0 0 8px rgba(74, 222, 128, 0.3); } 50% { box-shadow: 0 0 16px rgba(74, 222, 128, 0.6); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes flashGreen { 0%, 100% { background: transparent; } 50% { background: rgba(74, 222, 128, 0.25); } }
+  @keyframes flashRed   { 0%, 100% { background: transparent; } 50% { background: rgba(248, 113, 113, 0.25); } }
+  @keyframes xpBurst { 0% { opacity: 0; transform: translateY(0) scale(0.8); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px) scale(1.2); } }
+  @keyframes levelUpPop { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -35,86 +27,210 @@
     color: #f5f5f5;
     min-height: 100vh;
     min-height: 100dvh;
-    padding: env(safe-area-inset-top) 0 140px 0;
+    padding: env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom)) 0;
     overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Header ── */
-  .header {
-    text-align: center;
-    padding: 24px 20px 8px;
+  /* ── Top Header ── */
+  .top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 8px;
     position: sticky;
     top: 0;
-    background: linear-gradient(to bottom, #0a0a0a 80%, transparent);
     z-index: 20;
+    background: linear-gradient(to bottom, #0a0a0a 85%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
-  .header h1 {
-    font-size: 32px;
+  .top-title {
+    font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  .header .week-label {
-    font-size: 13px;
-    color: #666;
-    margin-top: 4px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+  .top-stats {
+    display: flex;
+    gap: 10px;
+    align-items: center;
   }
-  .week-progress {
+  .stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 10px;
+    background: #141414;
+    border: 1px solid #1e1e1e;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .stat-chip .lbl { color: #666; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-chip .val { color: #f5f5f5; }
+  .stat-chip.streak .val { color: #fb923c; }
+  .stat-chip.level { background: linear-gradient(135deg, #1a2332, #131822); border-color: #253040; }
+  .stat-chip.level .val { color: #60a5fa; }
+
+  /* ── Pages ── */
+  .page { display: none; padding: 0 16px; animation: fadeSlideIn 0.3s ease; }
+  .page.active { display: block; }
+
+  /* ── XP Ring (Home) ── */
+  .level-card {
+    background: linear-gradient(135deg, #131822, #0d1117);
+    border-radius: 22px;
+    padding: 22px;
+    margin: 12px 0 16px;
+    border: 1px solid #1e2a3a;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .ring-wrap { position: relative; width: 82px; height: 82px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: #1a1f2a; stroke-width: 7; }
+  .ring-fg { fill: none; stroke: url(#ringGrad); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  .ring-center {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: 10px;
-    font-size: 12px;
-    color: #555;
-    font-weight: 500;
+    flex-direction: column;
+    font-weight: 800;
   }
-  .week-progress-bar {
-    width: 120px;
-    height: 3px;
+  .ring-center .lvl-num { font-size: 24px; line-height: 1; }
+  .ring-center .lvl-lbl { font-size: 9px; color: #60a5fa; letter-spacing: 1px; margin-top: 2px; font-weight: 700; }
+  .level-info { flex: 1; }
+  .level-info .xp-line { font-size: 13px; color: #9aa5b8; font-weight: 600; margin-bottom: 4px; }
+  .level-info .xp-line b { color: #fff; font-weight: 800; }
+  .level-info .next-line { font-size: 11px; color: #556; font-weight: 500; }
+
+  /* ── Section ── */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 18px 4px 10px;
+  }
+  .section-title { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+  .section-meta { font-size: 12px; color: #666; font-weight: 600; }
+
+  /* ── Morning Task Card ── */
+  .task {
+    background: #131313;
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    border: 1px solid #1e1e1e;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.3s, background 0.3s, opacity 0.3s;
+  }
+  .task.done {
+    border-color: #1a3a24;
+    background: linear-gradient(135deg, #0d1a12, #131313);
+    opacity: 0.85;
+  }
+  .task-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     background: #1a1a1a;
-    border-radius: 2px;
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
   }
-  .week-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4ade80, #22d3ee);
-    border-radius: 2px;
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  .task.done .task-icon { background: linear-gradient(135deg, #0a2a14, #0a1a10); }
+  .task-body { flex: 1; min-width: 0; }
+  .task-name { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+  .task.done .task-name { color: #4ade80; }
+  .task-hint { font-size: 11px; color: #555; margin-top: 2px; font-weight: 500; }
+  .task-action {
+    padding: 8px 14px;
+    border-radius: 11px;
+    background: #fff;
+    color: #000;
+    font-size: 12px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+  }
+  .task-action:active { transform: scale(0.95); }
+  .task-action.done-mark {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #000;
+    pointer-events: none;
   }
 
-  /* ── Tabs ── */
-  .tabs {
+  /* ── Streak panel ── */
+  .streak-card {
+    background: linear-gradient(135deg, #1f1308, #140c05);
+    border-radius: 16px;
+    padding: 16px 18px;
+    border: 1px solid #3a2510;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .streak-flame { font-size: 34px; line-height: 1; }
+  .streak-info { flex: 1; }
+  .streak-num { font-size: 22px; font-weight: 800; color: #fb923c; }
+  .streak-num small { font-size: 12px; color: #9a6a3e; font-weight: 600; }
+  .streak-sub { font-size: 11px; color: #7a5530; margin-top: 2px; font-weight: 500; }
+  .streak-restores {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: 11px;
+    background: #0a0a0a;
+    border: 1px solid #2a1a08;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fb923c;
+  }
+
+  /* ── Bonus banner ── */
+  .routine-done-banner {
+    background: linear-gradient(135deg, #0a2a14, #0a1a10);
+    border: 1px solid #1a3a24;
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: center;
+    margin-bottom: 12px;
+    animation: fadeSlideIn 0.4s ease;
+  }
+  .routine-done-banner h4 { font-size: 14px; font-weight: 800; color: #4ade80; margin-bottom: 2px; }
+  .routine-done-banner p { font-size: 11px; color: #4a9a6a; font-weight: 500; }
+
+  /* ── Workout tabs ── */
+  .workout-tabs {
     display: flex;
     gap: 6px;
-    padding: 14px 16px 10px;
+    padding: 10px 0 10px;
     overflow-x: auto;
     scrollbar-width: none;
-    position: sticky;
-    top: 88px;
-    z-index: 15;
-    background: linear-gradient(to bottom, #0a0a0a 70%, transparent);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
   }
-  .tabs::-webkit-scrollbar { display: none; }
-
-  .tab {
+  .workout-tabs::-webkit-scrollbar { display: none; }
+  .day-tab {
     flex: 1;
     min-width: 44px;
     padding: 10px 6px;
-    border-radius: 14px;
+    border-radius: 12px;
     background: #151515;
     color: #555;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     border: 1.5px solid transparent;
     cursor: pointer;
@@ -122,7 +238,7 @@
     text-align: center;
     position: relative;
   }
-  .tab.today::after {
+  .day-tab.today::after {
     content: '';
     position: absolute;
     bottom: 4px;
@@ -133,119 +249,61 @@
     border-radius: 50%;
     background: #4ade80;
   }
-  .tab.active {
-    background: #fff;
-    color: #000;
-    border-color: #fff;
-    box-shadow: 0 4px 20px rgba(255,255,255,0.15);
-  }
-  .tab.active.today::after { background: #000; }
-  .tab.completed {
-    background: linear-gradient(135deg, #0a2a14, #0a1a10);
-    color: #4ade80;
-    border-color: #1a3a24;
-  }
-  .tab.completed.active {
-    background: linear-gradient(135deg, #4ade80, #22c55e);
-    color: #000;
-    border-color: #4ade80;
-    box-shadow: 0 4px 20px rgba(74, 222, 128, 0.3);
-  }
-
-  /* ── Content Area ── */
-  .content-area {
-    padding: 0 16px;
-    animation: fadeSlideIn 0.3s ease;
-  }
+  .day-tab.active { background: #fff; color: #000; border-color: #fff; }
+  .day-tab.active.today::after { background: #000; }
+  .day-tab.completed { background: linear-gradient(135deg, #0a2a14, #0a1a10); color: #4ade80; border-color: #1a3a24; }
+  .day-tab.completed.active { background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; border-color: #4ade80; }
 
   .day-header {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    margin: 20px 4px 6px;
+    margin: 14px 4px 6px;
   }
-  .day-title {
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-  }
+  .day-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
   .day-badge {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 8px;
+    padding: 4px 9px;
+    border-radius: 7px;
     background: #1a1a1a;
     color: #666;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  .day-subtitle {
-    font-size: 14px;
-    color: #555;
-    margin: 0 4px 18px;
-    font-weight: 500;
-  }
+  .day-subtitle { font-size: 13px; color: #555; margin: 0 4px 16px; font-weight: 500; }
 
-  /* ── Progress ── */
   .progress-container {
     background: #131313;
-    border-radius: 16px;
-    padding: 16px 18px;
-    margin-bottom: 14px;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
     border: 1px solid #1e1e1e;
   }
-  .progress-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .progress-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #888;
-  }
+  .progress-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .progress-label { font-size: 12px; font-weight: 600; color: #888; }
   .progress-pct {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 800;
     background: linear-gradient(135deg, #4ade80, #22d3ee);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  .progress-pct.zero {
-    background: none;
-    -webkit-text-fill-color: #333;
-  }
-  .progress-bar {
-    width: 100%;
-    height: 8px;
-    background: #1a1a1a;
-    border-radius: 4px;
-    overflow: hidden;
-  }
+  .progress-pct.zero { background: none; -webkit-text-fill-color: #333; }
+  .progress-bar { width: 100%; height: 7px; background: #1a1a1a; border-radius: 4px; overflow: hidden; }
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #4ade80, #22d3ee);
     border-radius: 4px;
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .progress-fill.complete {
-    animation: progressGlow 2s ease-in-out infinite;
-    border-radius: 4px;
-  }
-  .progress-sets {
-    font-size: 12px;
-    color: #444;
-    margin-top: 8px;
-    font-weight: 500;
-  }
+  .progress-fill.complete { animation: progressGlow 2s ease-in-out infinite; }
 
-  /* ── Exercise Cards ── */
   .exercise {
     background: #131313;
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 10px;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 9px;
     border: 1px solid #1e1e1e;
     transition: border-color 0.3s, background 0.3s;
   }
@@ -253,43 +311,21 @@
     border-color: #1a3a24;
     background: linear-gradient(135deg, #0d1a12, #131313);
   }
-  .exercise-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-  }
-  .exercise-name {
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
-  }
-  .exercise-check {
-    font-size: 16px;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
+  .exercise-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .exercise-name { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+  .exercise-check { font-size: 15px; opacity: 0; transition: opacity 0.3s; color: #4ade80; }
   .exercise.all-done .exercise-check { opacity: 1; }
-  .exercise-detail {
-    font-size: 13px;
-    color: #555;
-    margin-bottom: 14px;
-    font-weight: 500;
-  }
+  .exercise-detail { font-size: 12px; color: #555; margin-bottom: 12px; font-weight: 500; }
 
-  .sets {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
+  .sets { display: flex; gap: 7px; flex-wrap: wrap; }
   .set-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     border: 2px solid #252525;
     background: #1a1a1a;
     color: #555;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -307,123 +343,435 @@
     box-shadow: 0 2px 12px rgba(74, 222, 128, 0.25);
     animation: checkPop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .set-btn.done::after {
-    content: '\2713';
-    position: absolute;
-    font-size: 18px;
-    font-weight: 800;
-  }
+  .set-btn.done::after { content: '\2713'; position: absolute; font-size: 16px; font-weight: 800; }
   .set-btn.done span { opacity: 0; }
 
-  /* ── Recovery Card ── */
   .recovery-card {
     background: linear-gradient(135deg, #131318, #0d1117);
-    border-radius: 20px;
-    padding: 40px 24px;
+    border-radius: 18px;
+    padding: 34px 20px;
     text-align: center;
-    margin-top: 20px;
+    margin-top: 12px;
     border: 1px solid #1e1e2a;
     position: relative;
     overflow: hidden;
   }
-  .recovery-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
-  }
-  .recovery-icon {
-    font-size: 56px;
-    margin-bottom: 16px;
-    display: block;
-  }
-  .recovery-card h3 {
-    font-size: 22px;
-    font-weight: 800;
-    margin-bottom: 8px;
-    letter-spacing: -0.3px;
-  }
-  .recovery-card p {
-    color: #666;
-    font-size: 15px;
-    line-height: 1.6;
-    font-weight: 500;
-  }
+  .recovery-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+  .recovery-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .recovery-card p { color: #666; font-size: 14px; line-height: 1.5; font-weight: 500; }
 
-  /* ── Buttons ── */
-  .actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 24px;
-    padding-bottom: 20px;
-  }
+  .actions { display: flex; gap: 10px; margin-top: 20px; padding-bottom: 12px; }
   .action-btn {
     flex: 1;
-    padding: 14px;
-    border-radius: 14px;
+    padding: 12px;
+    border-radius: 12px;
     border: none;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
   }
   .action-btn:active { transform: scale(0.97); }
-  .action-btn.reset-day {
-    background: #151515;
-    color: #666;
-    border: 1px solid #222;
-  }
-  .action-btn.reset-week {
-    background: #1a0a0a;
-    color: #f87171;
-    border: 1px solid #2a1515;
-  }
+  .action-btn.reset-day { background: #151515; color: #666; border: 1px solid #222; }
+  .action-btn.reset-week { background: #1a0a0a; color: #f87171; border: 1px solid #2a1515; }
 
-  /* ── Completion Banner ── */
   .complete-banner {
     background: linear-gradient(135deg, #0a2a14, #0a1a10);
     border: 1px solid #1a3a24;
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 14px;
+    padding: 16px;
     text-align: center;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     animation: fadeSlideIn 0.4s ease;
   }
-  .complete-banner .emoji { font-size: 32px; margin-bottom: 8px; }
-  .complete-banner h3 {
+  .complete-banner .emoji { font-size: 28px; margin-bottom: 6px; }
+  .complete-banner h3 { font-size: 16px; font-weight: 800; color: #4ade80; margin-bottom: 2px; }
+  .complete-banner p { font-size: 12px; color: #4a9a6a; font-weight: 500; }
+
+  /* ── Bottom tab bar ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(10, 10, 10, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid #1a1a1a;
+    display: flex;
+    gap: 8px;
+    z-index: 30;
+  }
+  .nav-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #555;
+    padding: 8px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    transition: color 0.2s;
+    border-radius: 12px;
+  }
+  .nav-btn .icon { font-size: 22px; line-height: 1; }
+  .nav-btn.active { color: #fff; }
+  .nav-btn.active .icon { filter: drop-shadow(0 0 6px rgba(255,255,255,0.3)); }
+
+  /* ── Scan modal ── */
+  .scan-modal {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    animation: fadeSlideIn 0.25s ease;
+  }
+  .scan-modal.open { display: flex; }
+  .scan-head {
+    padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
+    z-index: 2;
+  }
+  .scan-title { font-size: 16px; font-weight: 800; letter-spacing: -0.2px; }
+  .scan-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    width: 34px; height: 34px;
+    border-radius: 50%;
     font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .scan-video-wrap {
+    flex: 1;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+  }
+  .scan-video { width: 100%; height: 100%; object-fit: cover; }
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+    pointer-events: none;
+  }
+  .scan-target {
+    width: 70%;
+    aspect-ratio: 1;
+    max-width: 280px;
+    border: 2px dashed rgba(255,255,255,0.4);
+    border-radius: 24px;
+    margin-bottom: 16px;
+  }
+  .scan-hint-text {
+    background: rgba(0,0,0,0.6);
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    max-width: 90%;
+  }
+  .scan-status {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    gap: 14px;
+    z-index: 3;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .scan-status.show { opacity: 1; pointer-events: auto; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid #222;
+    border-top-color: #4ade80;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .scan-status.success { background: rgba(10, 30, 15, 0.92); color: #4ade80; }
+  .scan-status.fail { background: rgba(30, 10, 10, 0.92); color: #f87171; }
+  .status-icon { font-size: 52px; }
+  .status-sub { font-size: 12px; opacity: 0.7; font-weight: 500; text-align: center; max-width: 280px; }
+  .progress-text { font-size: 11px; color: #888; margin-top: 4px; }
+
+  .scan-foot {
+    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+  }
+  .capture-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid rgba(255,255,255,0.3);
+    box-shadow: 0 0 0 2px #fff inset;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .capture-btn:active { transform: scale(0.92); }
+  .capture-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── XP floating burst ── */
+  .xp-float {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
     font-weight: 800;
     color: #4ade80;
+    text-shadow: 0 0 20px rgba(74, 222, 128, 0.6);
+    pointer-events: none;
+    z-index: 200;
+    animation: xpBurst 1.2s ease-out forwards;
+  }
+
+  /* ── Level up modal ── */
+  .levelup-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 150;
+  }
+  .levelup-modal.open { display: flex; }
+  .levelup-card {
+    background: linear-gradient(135deg, #1a2332, #0d1117);
+    border: 1px solid #3a4558;
+    border-radius: 24px;
+    padding: 34px 30px;
+    text-align: center;
+    animation: levelUpPop 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 300px;
+    margin: 20px;
+  }
+  .levelup-card .star { font-size: 60px; margin-bottom: 10px; }
+  .levelup-card h2 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #60a5fa, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     margin-bottom: 4px;
   }
-  .complete-banner p {
-    font-size: 13px;
-    color: #4a9a6a;
-    font-weight: 500;
+  .levelup-card p { color: #9aa5b8; font-size: 14px; font-weight: 500; margin-bottom: 18px; }
+  .levelup-card button {
+    padding: 12px 30px;
+    border-radius: 12px;
+    background: #fff;
+    color: #000;
+    font-weight: 800;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>Workout</h1>
-  <div class="week-label" id="weekLabel"></div>
-  <div class="week-progress">
-    <span id="weekProgressText"></span>
-    <div class="week-progress-bar"><div class="week-progress-fill" id="weekProgressFill"></div></div>
+<div class="top-header">
+  <div class="top-title">Routine</div>
+  <div class="top-stats">
+    <div class="stat-chip level">
+      <span class="lbl">LVL</span>
+      <span class="val" id="headerLevel">1</span>
+    </div>
+    <div class="stat-chip streak">
+      <span class="val"><span id="headerStreak">0</span>\u{1F525}</span>
+    </div>
   </div>
 </div>
 
-<div class="tabs" id="tabs"></div>
-<div class="content-area" id="content"></div>
+<!-- ── HOME PAGE ── -->
+<div class="page active" id="homePage">
+  <div class="level-card">
+    <div class="ring-wrap">
+      <svg width="82" height="82" viewBox="0 0 82 82">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="41" cy="41" r="36"/>
+        <circle class="ring-fg" id="ringFg" cx="41" cy="41" r="36"
+                stroke-dasharray="226.19" stroke-dashoffset="226.19"/>
+      </svg>
+      <div class="ring-center">
+        <div class="lvl-num" id="levelNum">1</div>
+        <div class="lvl-lbl">LEVEL</div>
+      </div>
+    </div>
+    <div class="level-info">
+      <div class="xp-line"><b id="xpCurrent">0</b> / <span id="xpNext">100</span> XP</div>
+      <div class="next-line" id="nextText">100 XP to level 2</div>
+    </div>
+  </div>
 
-<script>
-const DAYS = [
+  <div class="streak-card">
+    <div class="streak-flame">\u{1F525}</div>
+    <div class="streak-info">
+      <div class="streak-num"><span id="streakDays">0</span><small> day streak</small></div>
+      <div class="streak-sub" id="streakSub">Finish today's routine to start</div>
+    </div>
+    <div class="streak-restores" title="Streak restores">
+      <span>\u{1F6E1}</span>
+      <span id="streakRestores">0</span>
+    </div>
+  </div>
+
+  <div id="routineDoneBanner"></div>
+
+  <div class="section-head">
+    <div class="section-title">Morning Routine</div>
+    <div class="section-meta" id="morningMeta">0/4</div>
+  </div>
+
+  <div id="morningList"></div>
+
+  <div class="section-head">
+    <div class="section-title">Today</div>
+    <div class="section-meta" id="workoutSummary">—</div>
+  </div>
+  <div id="todayWorkoutCard"></div>
+</div>
+
+<!-- ── WORKOUT PAGE ── -->
+<div class="page" id="workoutPage">
+  <div class="workout-tabs" id="dayTabs"></div>
+  <div id="workoutContent"></div>
+</div>
+
+<!-- ── SCAN MODAL ── -->
+<div class="scan-modal" id="scanModal">
+  <div class="scan-head">
+    <div class="scan-title" id="scanTitle">Scan</div>
+    <button class="scan-close" id="scanClose">\u2715</button>
+  </div>
+  <div class="scan-video-wrap">
+    <video class="scan-video" id="scanVideo" autoplay playsinline muted></video>
+    <div class="scan-overlay">
+      <div class="scan-target"></div>
+      <div class="scan-hint-text" id="scanHint">Center the item in the box</div>
+    </div>
+    <div class="scan-status" id="scanStatus">
+      <div class="spinner"></div>
+      <div id="scanStatusText">Loading\u2026</div>
+      <div class="status-sub" id="scanStatusSub"></div>
+    </div>
+  </div>
+  <div class="scan-foot">
+    <button class="capture-btn" id="captureBtn"></button>
+  </div>
+</div>
+
+<!-- ── LEVEL UP MODAL ── -->
+<div class="levelup-modal" id="levelupModal">
+  <div class="levelup-card">
+    <div class="star">\u2B50</div>
+    <h2>Level <span id="levelupNum">2</span></h2>
+    <p id="levelupMsg">Keep going.</p>
+    <button id="levelupClose">Nice</button>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-page="homePage">
+    <div class="icon">\u{1F3E0}</div>
+    <div>Home</div>
+  </button>
+  <button class="nav-btn" data-page="workoutPage">
+    <div class="icon">\u{1F4AA}</div>
+    <div>Workout</div>
+  </button>
+</nav>
+
+<script type="module">
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2/dist/transformers.min.js';
+env.allowLocalModels = false;
+env.useBrowserCache = true;
+
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+
+const MORNING_TASKS = [
   {
-    key: 'monday', label: 'Mon', title: 'Push', subtitle: 'Chest / Shoulders / Triceps',
+    id: 'water',
+    name: 'Drink a glass of water',
+    icon: '\u{1F4A7}',
+    hint: 'Hydrate first thing',
+    facingMode: 'environment',
+    prompt: 'Show a glass or bottle of water',
+    positive: 'a clear glass or bottle of water',
+    labels: ['a clear glass or bottle of water', 'an empty glass', 'a coffee or juice drink', 'a random object']
+  },
+  {
+    id: 'skincare',
+    name: 'Skin care',
+    icon: '\u{1F9F4}',
+    hint: 'Wash + moisturize',
+    facingMode: 'user',
+    prompt: 'Take a close-up selfie',
+    positive: 'a close-up selfie of a person\u2019s face',
+    labels: ['a close-up selfie of a person\u2019s face', 'a wide view of a room', 'a random object', 'a blank wall']
+  },
+  {
+    id: 'calisthenics',
+    name: 'Calisthenics',
+    icon: '\u{1F93E}',
+    hint: 'Parallettes / bodyweight',
+    facingMode: 'environment',
+    prompt: 'Show yourself on the parallettes or mid-exercise',
+    positive: 'a person doing push-ups, dips, pull-ups or bodyweight exercise',
+    labels: ['a person doing push-ups, dips, pull-ups or bodyweight exercise', 'a person sitting or standing still', 'an empty room', 'a random object']
+  },
+  {
+    id: 'shake',
+    name: 'Protein shake',
+    icon: '\u{1F964}',
+    hint: 'Post-workout fuel',
+    facingMode: 'environment',
+    prompt: 'Show your shaker or protein drink',
+    positive: 'a protein shaker bottle or protein shake',
+    labels: ['a protein shaker bottle or protein shake', 'a glass of plain water', 'an empty cup', 'a random object']
+  }
+];
+
+const DAYS = [
+  { key: 'monday',    label: 'Mon', title: 'Push', subtitle: 'Chest / Shoulders / Triceps',
     exercises: [
       { name: 'Incline DB Press', sets: 4, reps: '8-12' },
       { name: 'Flat Bench Press', sets: 3, reps: '6-10' },
@@ -431,14 +779,9 @@ const DAYS = [
       { name: 'Lateral Raises', sets: 4, reps: '12-20' },
       { name: 'Tricep Extension', sets: 3, reps: '8-12' },
       { name: 'Pec Deck', sets: 3, reps: '12-15' },
-    ]
-  },
-  {
-    key: 'tuesday', label: 'Tue', title: 'Active Recovery', subtitle: 'CrossFit with Mom',
-    recovery: true
-  },
-  {
-    key: 'wednesday', label: 'Wed', title: 'Pull', subtitle: 'Back / Biceps',
+    ]},
+  { key: 'tuesday',   label: 'Tue', title: 'Active Recovery', subtitle: 'CrossFit with Mom', recovery: true },
+  { key: 'wednesday', label: 'Wed', title: 'Pull', subtitle: 'Back / Biceps',
     exercises: [
       { name: 'Pull Ups', sets: 4, reps: '6-10' },
       { name: 'Lat Pulldown', sets: 3, reps: '8-12' },
@@ -446,14 +789,9 @@ const DAYS = [
       { name: 'Single Arm DB Row', sets: 3, reps: '10-12' },
       { name: 'Reverse Pec Deck', sets: 4, reps: '12-20' },
       { name: 'Curls', sets: 3, reps: '10-12' },
-    ]
-  },
-  {
-    key: 'thursday', label: 'Thu', title: 'Active Recovery', subtitle: 'CrossFit with Mom',
-    recovery: true
-  },
-  {
-    key: 'friday', label: 'Fri', title: 'Shoulders & Arms', subtitle: 'Delts / Triceps / Biceps',
+    ]},
+  { key: 'thursday',  label: 'Thu', title: 'Active Recovery', subtitle: 'CrossFit with Mom', recovery: true },
+  { key: 'friday',    label: 'Fri', title: 'Shoulders & Arms', subtitle: 'Delts / Triceps / Biceps',
     exercises: [
       { name: 'DB Shoulder Press', sets: 4, reps: '8-12' },
       { name: 'Lateral Raises', sets: 5, reps: '15-20' },
@@ -461,10 +799,8 @@ const DAYS = [
       { name: 'Upright Row', sets: 3, reps: '10-12' },
       { name: 'Skull Crushers', sets: 3, reps: '10-12' },
       { name: 'Curls', sets: 3, reps: '10-12' },
-    ]
-  },
-  {
-    key: 'saturday', label: 'Sat', title: 'Legs', subtitle: 'Quads / Hamstrings / Calves',
+    ]},
+  { key: 'saturday',  label: 'Sat', title: 'Legs', subtitle: 'Quads / Hamstrings / Calves',
     exercises: [
       { name: 'Squat', sets: 4, reps: '6-10' },
       { name: 'Leg Extensions', sets: 3, reps: '8-12' },
@@ -473,105 +809,516 @@ const DAYS = [
       { name: 'Calf Raises', sets: 3, reps: '12-20' },
       { name: 'Abductors (Out)', sets: 3, reps: '10-12' },
       { name: 'Adductors (In)', sets: 3, reps: '10-12' },
-    ]
-  },
-  {
-    key: 'sunday', label: 'Sun', title: 'Upper', subtitle: 'Back / Chest / Shoulders',
+    ]},
+  { key: 'sunday',    label: 'Sun', title: 'Upper', subtitle: 'Back / Chest / Shoulders',
     exercises: [
       { name: 'Pull Ups', sets: 3, reps: '6-10' },
       { name: 'Lat Pulldown', sets: 3, reps: '10-12' },
       { name: 'Incline DB Bench', sets: 3, reps: '8-12' },
       { name: 'Single Arm DB Row', sets: 3, reps: '8-12' },
       { name: 'Lateral Raises', sets: 3, reps: '15-20' },
-    ]
-  },
+    ]},
 ];
 
-const jsDay = new Date().getDay();
-const todayIndex = jsDay === 0 ? 6 : jsDay - 1;
+const XP = {
+  TASK: 10,
+  MORNING_BONUS: 20,
+  SET: 5,
+  WORKOUT_BONUS: 30,
+  SCAN_BONUS: 5,
+};
 
-function getState() {
-  try { return JSON.parse(localStorage.getItem('workout_v2')) || {}; } catch { return {}; }
+// level threshold: sum 50 * L * (L-1), so L2=100, L3=300, L4=600, L5=1000, L6=1500
+function xpForLevel(L) { return 50 * L * (L - 1); }
+function levelFromXp(xp) {
+  let L = 1;
+  while (xpForLevel(L + 1) <= xp) L++;
+  return L;
 }
-function saveState(s) { localStorage.setItem('workout_v2', JSON.stringify(s)); }
 
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+
+const STATE_KEY = 'routine_v1';
+const LEGACY_WORKOUT_KEY = 'workout_v2';
+
+function loadState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STATE_KEY));
+    if (raw) return raw;
+  } catch {}
+  // migrate legacy workout
+  let legacy = {};
+  try { legacy = JSON.parse(localStorage.getItem(LEGACY_WORKOUT_KEY)) || {}; } catch {}
+  return {
+    xp: 0,
+    streak: 0,
+    streakRestores: 0,
+    lastStreakDay: null,   // YYYY-MM-DD of last counted day
+    morning: {},           // { 'YYYY-MM-DD': { water:true, skincare:true, ... } }
+    workout: legacy,       // keeps _week + per-day arrays
+    lastLevelShown: 1,
+  };
+}
+function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+
+let state = loadState();
+
+// ═══════════════════════════════════════════════════════════════
+// DATE / WEEK HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+function dayBefore(str, n = 1) {
+  const [y, m, d] = str.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - n);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
 function getWeekId() {
   const now = new Date();
   const jan1 = new Date(now.getFullYear(), 0, 1);
   const days = Math.floor((now - jan1) / 86400000);
   return `${now.getFullYear()}-W${Math.ceil((days + jan1.getDay() + 1) / 7)}`;
 }
-
-function checkWeekReset(state) {
+function checkWeekReset() {
   const wk = getWeekId();
-  if (state._week !== wk) {
-    const fresh = { _week: wk };
-    saveState(fresh);
-    return fresh;
+  if (!state.workout || state.workout._week !== wk) {
+    state.workout = { _week: wk };
+    saveState();
   }
-  return state;
+}
+checkWeekReset();
+
+const jsDay = new Date().getDay();
+const todayIndex = jsDay === 0 ? 6 : jsDay - 1;
+let activeDay = todayIndex;
+
+// ═══════════════════════════════════════════════════════════════
+// XP / LEVEL / STREAK
+// ═══════════════════════════════════════════════════════════════
+
+function addXp(amount) {
+  if (!amount) return;
+  const prevLevel = levelFromXp(state.xp);
+  state.xp = Math.max(0, state.xp + amount);
+  const newLevel = levelFromXp(state.xp);
+  saveState();
+  if (amount > 0) showXpBurst(amount);
+  if (newLevel > prevLevel && newLevel > (state.lastLevelShown || 1)) {
+    state.lastLevelShown = newLevel;
+    saveState();
+    showLevelUp(newLevel);
+  }
 }
 
-let state = checkWeekReset(getState());
-let activeDay = todayIndex;
+function showXpBurst(amount) {
+  const el = document.createElement('div');
+  el.className = 'xp-float';
+  el.textContent = `+${amount} XP`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+function showLevelUp(L) {
+  document.getElementById('levelupNum').textContent = L;
+  const msgs = [
+    'Nice work.',
+    'Keep stacking days.',
+    'Consistency wins.',
+    'On a roll.',
+    'Showing up is half of it.',
+  ];
+  document.getElementById('levelupMsg').textContent = msgs[L % msgs.length];
+  document.getElementById('levelupModal').classList.add('open');
+}
+document.getElementById('levelupClose').onclick = () => {
+  document.getElementById('levelupModal').classList.remove('open');
+};
+
+function isMorningComplete(dateStr) {
+  const m = state.morning[dateStr];
+  if (!m) return false;
+  return MORNING_TASKS.every(t => m[t.id]);
+}
+
+// When today's routine goes from incomplete -> complete, bump streak
+function maybeAdvanceStreak() {
+  const t = todayStr();
+  if (!isMorningComplete(t)) return;
+  if (state.lastStreakDay === t) return; // already counted
+
+  const yesterday = dayBefore(t);
+  if (state.lastStreakDay === yesterday) {
+    state.streak += 1;
+  } else if (state.lastStreakDay === dayBefore(t, 2) && state.streakRestores > 0) {
+    // auto-use a restore to bridge a single missed day
+    state.streakRestores -= 1;
+    state.streak += 1;
+  } else {
+    state.streak = 1;
+  }
+  state.lastStreakDay = t;
+
+  // every 7 streak days, grant a restore (cap 3)
+  if (state.streak % 7 === 0 && state.streakRestores < 3) {
+    state.streakRestores += 1;
+  }
+  // bonus XP for full routine
+  addXp(XP.MORNING_BONUS);
+  saveState();
+}
+
+// On load, if streak's lastStreakDay is older than yesterday, it should eventually break
+// We keep it soft: display-only shows 0 if gap is too big.
+function displayStreak() {
+  const t = todayStr();
+  if (!state.lastStreakDay) return 0;
+  if (state.lastStreakDay === t) return state.streak;
+  if (state.lastStreakDay === dayBefore(t)) return state.streak; // yesterday — still alive for today
+  // missed more than 1 day → broken unless restores auto-applied (applied on completion)
+  const gap = Math.round((new Date(t) - new Date(state.lastStreakDay)) / 86400000);
+  if (gap === 2 && state.streakRestores > 0) return state.streak; // could be saved today
+  return 0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI CLASSIFIER (CLIP via transformers.js)
+// ═══════════════════════════════════════════════════════════════
+
+let classifier = null;
+let classifierPromise = null;
+
+async function getClassifier(onProgress) {
+  if (classifier) return classifier;
+  if (!classifierPromise) {
+    classifierPromise = pipeline(
+      'zero-shot-image-classification',
+      'Xenova/clip-vit-base-patch16',
+      { progress_callback: onProgress, dtype: 'q8' }
+    ).then(c => { classifier = c; return c; });
+  }
+  return classifierPromise;
+}
+
+async function classifyFrame(canvas, labels) {
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  const cls = await getClassifier();
+  const results = await cls(dataUrl, labels);
+  return results; // sorted high→low
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCAN FLOW
+// ═══════════════════════════════════════════════════════════════
+
+const scanModal = document.getElementById('scanModal');
+const scanVideo = document.getElementById('scanVideo');
+const scanTitleEl = document.getElementById('scanTitle');
+const scanHint = document.getElementById('scanHint');
+const scanStatus = document.getElementById('scanStatus');
+const scanStatusText = document.getElementById('scanStatusText');
+const scanStatusSub = document.getElementById('scanStatusSub');
+const captureBtn = document.getElementById('captureBtn');
+let currentStream = null;
+let currentTask = null;
+
+document.getElementById('scanClose').onclick = closeScan;
+
+function closeScan() {
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+    currentStream = null;
+  }
+  scanModal.classList.remove('open');
+  setScanStatus(null);
+  currentTask = null;
+}
+
+function setScanStatus(kind, text, sub) {
+  scanStatus.classList.remove('success', 'fail', 'show');
+  if (!kind) return;
+  if (kind === 'loading') {
+    scanStatusText.textContent = text || 'Analyzing\u2026';
+    scanStatusSub.textContent = sub || '';
+    scanStatus.querySelector('.spinner').style.display = '';
+    scanStatus.querySelector('.status-icon')?.remove();
+    scanStatus.classList.add('show');
+  } else if (kind === 'success') {
+    scanStatus.classList.add('show', 'success');
+    scanStatus.querySelector('.spinner').style.display = 'none';
+    let icon = scanStatus.querySelector('.status-icon');
+    if (!icon) {
+      icon = document.createElement('div');
+      icon.className = 'status-icon';
+      scanStatus.insertBefore(icon, scanStatusText);
+    }
+    icon.textContent = '\u2713';
+    scanStatusText.textContent = text || 'Got it!';
+    scanStatusSub.textContent = sub || '';
+  } else if (kind === 'fail') {
+    scanStatus.classList.add('show', 'fail');
+    scanStatus.querySelector('.spinner').style.display = 'none';
+    let icon = scanStatus.querySelector('.status-icon');
+    if (!icon) {
+      icon = document.createElement('div');
+      icon.className = 'status-icon';
+      scanStatus.insertBefore(icon, scanStatusText);
+    }
+    icon.textContent = '\u2715';
+    scanStatusText.textContent = text || 'Didn\u2019t detect it';
+    scanStatusSub.textContent = sub || 'Try again';
+  }
+}
+
+async function openScan(task) {
+  currentTask = task;
+  scanTitleEl.textContent = task.name;
+  scanHint.textContent = task.prompt;
+  scanModal.classList.add('open');
+  captureBtn.disabled = false;
+
+  try {
+    currentStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: task.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    scanVideo.srcObject = currentStream;
+  } catch (err) {
+    setScanStatus('fail', 'Camera blocked', 'Allow camera access in settings');
+    return;
+  }
+
+  // warm the classifier in the background
+  getClassifier((p) => {
+    if (p.status === 'progress' && p.progress != null) {
+      const pct = Math.round(p.progress);
+      scanHint.textContent = `Loading AI\u2026 ${pct}%`;
+    } else if (p.status === 'ready' || p.status === 'done') {
+      scanHint.textContent = task.prompt;
+    }
+  }).then(() => {
+    scanHint.textContent = task.prompt;
+  }).catch(() => {
+    scanHint.textContent = 'AI load failed — tap to try anyway';
+  });
+}
+
+captureBtn.onclick = async () => {
+  if (!currentTask || !currentStream) return;
+  captureBtn.disabled = true;
+
+  const canvas = document.createElement('canvas');
+  const v = scanVideo;
+  const size = Math.min(v.videoWidth, v.videoHeight);
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const sx = (v.videoWidth - size) / 2;
+  const sy = (v.videoHeight - size) / 2;
+  ctx.drawImage(v, sx, sy, size, size, 0, 0, size, size);
+
+  setScanStatus('loading', 'Analyzing\u2026');
+
+  try {
+    const results = await classifyFrame(canvas, currentTask.labels);
+    const top = results[0];
+    const ok = top.label === currentTask.positive && top.score >= 0.45;
+    if (ok) {
+      setScanStatus('success', 'Verified', `Match: ${Math.round(top.score * 100)}%`);
+      setTimeout(() => {
+        completeTask(currentTask.id);
+        closeScan();
+      }, 900);
+    } else {
+      setScanStatus('fail', 'Didn\u2019t detect it', `Closest: "${top.label}" (${Math.round(top.score * 100)}%)`);
+      setTimeout(() => {
+        setScanStatus(null);
+        captureBtn.disabled = false;
+      }, 1600);
+    }
+  } catch (err) {
+    console.error(err);
+    setScanStatus('fail', 'Scan error', err.message || 'Try again');
+    setTimeout(() => {
+      setScanStatus(null);
+      captureBtn.disabled = false;
+    }, 1600);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// TASK COMPLETION
+// ═══════════════════════════════════════════════════════════════
+
+function completeTask(taskId) {
+  const t = todayStr();
+  if (!state.morning[t]) state.morning[t] = {};
+  if (state.morning[t][taskId]) return;
+  state.morning[t][taskId] = true;
+  addXp(XP.TASK + XP.SCAN_BONUS);
+  saveState();
+  maybeAdvanceStreak();
+  renderHome();
+}
+
+function uncompleteTask(taskId) {
+  const t = todayStr();
+  if (!state.morning[t]?.[taskId]) return;
+  delete state.morning[t][taskId];
+  addXp(-(XP.TASK + XP.SCAN_BONUS));
+  saveState();
+  renderHome();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER: HOME
+// ═══════════════════════════════════════════════════════════════
+
+function renderHome() {
+  // Header stats
+  const L = levelFromXp(state.xp);
+  document.getElementById('headerLevel').textContent = L;
+  document.getElementById('levelNum').textContent = L;
+  const thisLvl = xpForLevel(L);
+  const nextLvl = xpForLevel(L + 1);
+  const into = state.xp - thisLvl;
+  const need = nextLvl - thisLvl;
+  document.getElementById('xpCurrent').textContent = state.xp;
+  document.getElementById('xpNext').textContent = nextLvl;
+  document.getElementById('nextText').textContent = `${nextLvl - state.xp} XP to level ${L + 1}`;
+  // ring
+  const C = 2 * Math.PI * 36;
+  const frac = Math.max(0, Math.min(1, into / need));
+  document.getElementById('ringFg').style.strokeDashoffset = C * (1 - frac);
+
+  // Streak
+  const s = displayStreak();
+  document.getElementById('headerStreak').textContent = s;
+  document.getElementById('streakDays').textContent = s;
+  document.getElementById('streakRestores').textContent = state.streakRestores;
+  const t = todayStr();
+  let sub = '';
+  if (isMorningComplete(t)) sub = 'Today: done \u2714';
+  else if (s > 0) sub = 'Finish today to keep it alive';
+  else sub = 'Finish today\u2019s routine to start';
+  document.getElementById('streakSub').textContent = sub;
+
+  // Morning list
+  const todayMorning = state.morning[t] || {};
+  const doneCount = MORNING_TASKS.filter(x => todayMorning[x.id]).length;
+  document.getElementById('morningMeta').textContent = `${doneCount}/${MORNING_TASKS.length}`;
+  const listEl = document.getElementById('morningList');
+  listEl.innerHTML = MORNING_TASKS.map(task => {
+    const done = !!todayMorning[task.id];
+    return `
+      <div class="task ${done ? 'done' : ''}">
+        <div class="task-icon">${task.icon}</div>
+        <div class="task-body">
+          <div class="task-name">${task.name}</div>
+          <div class="task-hint">${done ? '+' + (XP.TASK + XP.SCAN_BONUS) + ' XP earned' : task.hint}</div>
+        </div>
+        ${done
+          ? `<button class="task-action" data-undo="${task.id}">Undo</button>`
+          : `<button class="task-action" data-scan="${task.id}">Scan</button>`}
+      </div>`;
+  }).join('');
+  listEl.querySelectorAll('[data-scan]').forEach(b => {
+    b.onclick = () => {
+      const id = b.getAttribute('data-scan');
+      const task = MORNING_TASKS.find(x => x.id === id);
+      openScan(task);
+    };
+  });
+  listEl.querySelectorAll('[data-undo]').forEach(b => {
+    b.onclick = () => uncompleteTask(b.getAttribute('data-undo'));
+  });
+
+  // Routine-done banner
+  const banner = document.getElementById('routineDoneBanner');
+  if (isMorningComplete(t)) {
+    banner.innerHTML = `
+      <div class="routine-done-banner">
+        <h4>Routine complete</h4>
+        <p>+${XP.MORNING_BONUS} bonus XP &middot; streak +1</p>
+      </div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+
+  // Today's workout preview
+  const day = DAYS[todayIndex];
+  const card = document.getElementById('todayWorkoutCard');
+  if (day.recovery) {
+    card.innerHTML = `
+      <div class="recovery-card">
+        <span class="recovery-icon">\u{1F9D8}</span>
+        <h3>Active Recovery Day</h3>
+        <p>${day.subtitle}</p>
+      </div>`;
+    document.getElementById('workoutSummary').textContent = 'Recovery';
+  } else {
+    const p = getDayProgress(day.key);
+    const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
+    document.getElementById('workoutSummary').textContent = `${day.title} \u00b7 ${p.done}/${p.total}`;
+    card.innerHTML = `
+      <div class="progress-container" onclick="window._goWorkout()" style="cursor:pointer">
+        <div class="progress-top">
+          <span class="progress-label">${day.title} \u00b7 ${day.subtitle}</span>
+          <span class="progress-pct ${pct === 0 ? 'zero' : ''}">${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${pct===100?'complete':''}" style="width:${pct}%"></div></div>
+        <div style="font-size:11px;color:#555;margin-top:10px;font-weight:600">Tap to open workout \u2192</div>
+      </div>`;
+  }
+}
+window._goWorkout = () => switchPage('workoutPage');
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER: WORKOUT (ported from v2, now with XP hooks)
+// ═══════════════════════════════════════════════════════════════
 
 function getDayProgress(dayKey) {
   const day = DAYS.find(d => d.key === dayKey);
   if (!day || day.recovery) return { done: 0, total: 0 };
   const total = day.exercises.reduce((s, e) => s + e.sets, 0);
-  const done = (state[dayKey] || []).filter(Boolean).length;
-  return { done, total };
-}
-
-function getWeekProgress() {
-  let done = 0, total = 0;
-  DAYS.forEach(d => {
-    if (d.recovery) return;
-    const p = getDayProgress(d.key);
-    done += p.done;
-    total += p.total;
-  });
+  const done = (state.workout[dayKey] || []).filter(Boolean).length;
   return { done, total };
 }
 
 function getExerciseProgress(dayKey, startIdx, numSets) {
-  const sets = state[dayKey] || [];
+  const sets = state.workout[dayKey] || [];
   let done = 0;
-  for (let i = startIdx; i < startIdx + numSets; i++) {
-    if (sets[i]) done++;
-  }
+  for (let i = startIdx; i < startIdx + numSets; i++) if (sets[i]) done++;
   return { done, total: numSets };
 }
 
-function render() {
-  const tabsEl = document.getElementById('tabs');
-  const contentEl = document.getElementById('content');
-  const weekLabel = document.getElementById('weekLabel');
+function renderWorkout() {
+  const tabsEl = document.getElementById('dayTabs');
+  const contentEl = document.getElementById('workoutContent');
 
-  const now = new Date();
-  weekLabel.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-  // Week progress
-  const wp = getWeekProgress();
-  const wpPct = wp.total > 0 ? Math.round((wp.done / wp.total) * 100) : 0;
-  document.getElementById('weekProgressText').textContent = `Week ${wpPct}%`;
-  document.getElementById('weekProgressFill').style.width = wpPct + '%';
-
-  // Tabs
   tabsEl.innerHTML = DAYS.map((d, i) => {
     const p = getDayProgress(d.key);
     const isComplete = !d.recovery && p.total > 0 && p.done === p.total;
     const classes = [
-      'tab',
+      'day-tab',
       i === activeDay ? 'active' : '',
       i === todayIndex ? 'today' : '',
       isComplete ? 'completed' : ''
     ].filter(Boolean).join(' ');
-    return `<button class="${classes}" onclick="switchDay(${i})">${d.label}</button>`;
+    return `<button class="${classes}" data-day="${i}">${d.label}</button>`;
   }).join('');
+  tabsEl.querySelectorAll('[data-day]').forEach(b => {
+    b.onclick = () => { activeDay = +b.getAttribute('data-day'); renderWorkout(); };
+  });
 
   const day = DAYS[activeDay];
-
   if (day.recovery) {
     contentEl.innerHTML = `
       <div class="day-header">
@@ -582,7 +1329,7 @@ function render() {
       <div class="recovery-card">
         <span class="recovery-icon">\u{1F9D8}</span>
         <h3>Active Recovery Day</h3>
-        <p>CrossFit with Mom today.<br>Stay moving, let the muscles recover.</p>
+        <p>${day.subtitle}.<br>Stay moving, let the muscles recover.</p>
       </div>`;
     return;
   }
@@ -590,7 +1337,7 @@ function render() {
   const p = getDayProgress(day.key);
   const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
   const isComplete = p.done === p.total && p.total > 0;
-  const sets = state[day.key] || [];
+  const sets = state.workout[day.key] || [];
 
   let html = `
     <div class="day-header">
@@ -604,7 +1351,7 @@ function render() {
       <div class="complete-banner">
         <div class="emoji">\u{1F525}</div>
         <h3>Workout Complete!</h3>
-        <p>All ${p.total} sets crushed. Great work.</p>
+        <p>All ${p.total} sets crushed \u00b7 +${XP.WORKOUT_BONUS} bonus XP</p>
       </div>`;
   }
 
@@ -614,7 +1361,7 @@ function render() {
         <span class="progress-label">${p.done} of ${p.total} sets</span>
         <span class="progress-pct ${pct === 0 ? 'zero' : ''}">${pct}%</span>
       </div>
-      <div class="progress-bar"><div class="progress-fill ${isComplete ? 'complete' : ''}" style="width:${pct}%"></div></div>
+      <div class="progress-bar"><div class="progress-fill ${isComplete?'complete':''}" style="width:${pct}%"></div></div>
     </div>`;
 
   let setIdx = 0;
@@ -630,7 +1377,7 @@ function render() {
       <div class="sets">`;
     for (let s = 0; s < ex.sets; s++) {
       const done = sets[setIdx] ? 'done' : '';
-      html += `<button class="set-btn ${done}" onclick="toggleSet('${day.key}',${setIdx})"><span>${s + 1}</span></button>`;
+      html += `<button class="set-btn ${done}" data-toggle="${day.key}:${setIdx}"><span>${s + 1}</span></button>`;
       setIdx++;
     }
     html += `</div></div>`;
@@ -638,48 +1385,85 @@ function render() {
 
   html += `
     <div class="actions">
-      <button class="action-btn reset-day" onclick="resetDay('${day.key}')">Reset Day</button>
-      <button class="action-btn reset-week" onclick="resetWeek()">Reset Week</button>
+      <button class="action-btn reset-day" data-reset-day="${day.key}">Reset Day</button>
+      <button class="action-btn reset-week">Reset Week</button>
     </div>`;
 
   contentEl.innerHTML = html;
-}
-
-function switchDay(i) {
-  activeDay = i;
-  const content = document.getElementById('content');
-  content.style.animation = 'none';
-  content.offsetHeight;
-  content.style.animation = 'fadeSlideIn 0.25s ease';
-  render();
+  contentEl.querySelectorAll('[data-toggle]').forEach(b => {
+    b.onclick = () => {
+      const [dayKey, idxStr] = b.getAttribute('data-toggle').split(':');
+      toggleSet(dayKey, +idxStr);
+    };
+  });
+  contentEl.querySelectorAll('[data-reset-day]').forEach(b => {
+    b.onclick = () => resetDay(b.getAttribute('data-reset-day'));
+  });
+  contentEl.querySelector('.reset-week').onclick = resetWeek;
 }
 
 function toggleSet(dayKey, idx) {
-  if (!state[dayKey]) {
-    const day = DAYS.find(d => d.key === dayKey);
-    const total = day.exercises.reduce((s, e) => s + e.sets, 0);
-    state[dayKey] = new Array(total).fill(false);
-  }
-  state[dayKey][idx] = !state[dayKey][idx];
-  saveState(state);
-  render();
+  const day = DAYS.find(d => d.key === dayKey);
+  const total = day.exercises.reduce((s, e) => s + e.sets, 0);
+  if (!state.workout[dayKey]) state.workout[dayKey] = new Array(total).fill(false);
+
+  const wasComplete = state.workout[dayKey].filter(Boolean).length === total;
+  const prev = !!state.workout[dayKey][idx];
+  state.workout[dayKey][idx] = !prev;
+  const nowComplete = state.workout[dayKey].filter(Boolean).length === total;
+
+  addXp(prev ? -XP.SET : XP.SET);
+  if (!wasComplete && nowComplete) addXp(XP.WORKOUT_BONUS);
+  if (wasComplete && !nowComplete) addXp(-XP.WORKOUT_BONUS);
+
+  saveState();
+  renderWorkout();
+  renderHome();
 }
 
 function resetDay(dayKey) {
-  delete state[dayKey];
-  saveState(state);
-  render();
+  const sets = state.workout[dayKey] || [];
+  const doneCount = sets.filter(Boolean).length;
+  const day = DAYS.find(d => d.key === dayKey);
+  const total = day.exercises.reduce((s, e) => s + e.sets, 0);
+  const wasComplete = doneCount === total && total > 0;
+  addXp(-(doneCount * XP.SET));
+  if (wasComplete) addXp(-XP.WORKOUT_BONUS);
+  delete state.workout[dayKey];
+  saveState();
+  renderWorkout();
+  renderHome();
 }
 
 function resetWeek() {
-  if (confirm('Reset all progress for this week?')) {
-    state = { _week: getWeekId() };
-    saveState(state);
-    render();
-  }
+  if (!confirm('Reset all workout progress for this week?')) return;
+  // refund nothing — just wipe the week (XP stays earned)
+  state.workout = { _week: getWeekId() };
+  saveState();
+  renderWorkout();
+  renderHome();
 }
 
-render();
+// ═══════════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════════
+
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === id));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-page') === id));
+  if (id === 'homePage') renderHome();
+  else if (id === 'workoutPage') renderWorkout();
+}
+document.querySelectorAll('.nav-btn').forEach(b => {
+  b.onclick = () => switchPage(b.getAttribute('data-page'));
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+renderHome();
+renderWorkout();
 </script>
 </body>
 </html>
