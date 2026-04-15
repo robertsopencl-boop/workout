@@ -201,6 +201,90 @@
     color: #fb923c;
   }
 
+  /* ── Weight card ── */
+  .weight-card {
+    background: #131313;
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    border: 1px solid #1e1e1e;
+  }
+  .weight-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .weight-top .lbl { font-size: 12px; color: #888; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
+  .weight-top .trend { font-size: 12px; font-weight: 700; }
+  .weight-top .trend.up { color: #fb923c; }
+  .weight-top .trend.down { color: #4ade80; }
+  .weight-top .trend.flat { color: #666; }
+  .weight-big {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .weight-big .num { font-size: 34px; font-weight: 800; letter-spacing: -1px; }
+  .weight-big .unit { font-size: 14px; color: #666; font-weight: 700; }
+  .weight-big .num.empty { color: #333; }
+  .weight-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .weight-in {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 14px;
+    border-radius: 11px;
+    border: 1.5px solid #252525;
+    background: #0a0a0a;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .weight-in:focus { border-color: #4ade80; }
+  .weight-save {
+    padding: 0 18px;
+    border-radius: 11px;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .weight-save:active { transform: scale(0.96); }
+  .weight-save:disabled { opacity: 0.4; cursor: not-allowed; }
+  .weight-edit {
+    padding: 11px 14px;
+    border-radius: 11px;
+    background: #1a1a1a;
+    color: #aaa;
+    border: 1px solid #252525;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .weight-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 32px;
+    margin-top: 12px;
+  }
+  .weight-spark .bar {
+    flex: 1;
+    background: linear-gradient(to top, #253040, #60a5fa);
+    border-radius: 2px;
+    min-height: 3px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  .weight-spark .bar.today { opacity: 1; background: linear-gradient(to top, #22d3ee, #4ade80); }
+  .weight-sub { font-size: 11px; color: #555; margin-top: 6px; font-weight: 500; }
+
   /* ── Bonus banner ── */
   .routine-done-banner {
     background: linear-gradient(135deg, #0a2a14, #0a1a10);
@@ -654,6 +738,12 @@
   <div id="routineDoneBanner"></div>
 
   <div class="section-head">
+    <div class="section-title">Bodyweight</div>
+    <div class="section-meta" id="weightMeta">Log daily · +10 XP</div>
+  </div>
+  <div class="weight-card" id="weightCard"></div>
+
+  <div class="section-head">
     <div class="section-title">Morning Routine</div>
     <div class="section-meta" id="morningMeta">0/4</div>
   </div>
@@ -826,6 +916,7 @@ const XP = {
   SET: 5,
   WORKOUT_BONUS: 30,
   SCAN_BONUS: 5,
+  WEIGHT_LOG: 10,
 };
 
 // level threshold: sum 50 * L * (L-1), so L2=100, L3=300, L4=600, L5=1000, L6=1500
@@ -844,22 +935,29 @@ const STATE_KEY = 'routine_v1';
 const LEGACY_WORKOUT_KEY = 'workout_v2';
 
 function loadState() {
+  let s;
   try {
     const raw = JSON.parse(localStorage.getItem(STATE_KEY));
-    if (raw) return raw;
+    if (raw) s = raw;
   } catch {}
-  // migrate legacy workout
-  let legacy = {};
-  try { legacy = JSON.parse(localStorage.getItem(LEGACY_WORKOUT_KEY)) || {}; } catch {}
-  return {
-    xp: 0,
-    streak: 0,
-    streakRestores: 0,
-    lastStreakDay: null,   // YYYY-MM-DD of last counted day
-    morning: {},           // { 'YYYY-MM-DD': { water:true, skincare:true, ... } }
-    workout: legacy,       // keeps _week + per-day arrays
-    lastLevelShown: 1,
-  };
+  if (!s) {
+    let legacy = {};
+    try { legacy = JSON.parse(localStorage.getItem(LEGACY_WORKOUT_KEY)) || {}; } catch {}
+    s = {
+      xp: 0,
+      streak: 0,
+      streakRestores: 0,
+      lastStreakDay: null,
+      morning: {},
+      workout: legacy,
+      lastLevelShown: 1,
+      weights: {},
+      weightUnit: 'lbs',
+    };
+  }
+  if (!s.weights) s.weights = {};
+  if (!s.weightUnit) s.weightUnit = 'lbs';
+  return s;
 }
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
 
@@ -1181,6 +1279,170 @@ function uncompleteTask(taskId) {
 // RENDER: HOME
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// BODYWEIGHT
+// ═══════════════════════════════════════════════════════════════
+
+function logWeight(val) {
+  const w = parseFloat(val);
+  if (!w || w <= 0 || w > 1000) return false;
+  const t = todayStr();
+  const had = state.weights[t] != null;
+  state.weights[t] = Math.round(w * 10) / 10;
+  if (!had) addXp(XP.WEIGHT_LOG);
+  saveState();
+  renderHome();
+  return true;
+}
+
+function deleteTodayWeight() {
+  const t = todayStr();
+  if (state.weights[t] == null) return;
+  delete state.weights[t];
+  addXp(-XP.WEIGHT_LOG);
+  saveState();
+  renderHome();
+}
+
+function getWeightTrend() {
+  const entries = Object.entries(state.weights).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  if (entries.length < 2) return null;
+  const latest = entries[entries.length - 1][1];
+  // avg of entries from 7-14 days ago
+  const t = todayStr();
+  const cutoffNew = new Date(t); cutoffNew.setDate(cutoffNew.getDate() - 7);
+  const cutoffOld = new Date(t); cutoffOld.setDate(cutoffOld.getDate() - 14);
+  const prior = entries.filter(([d]) => {
+    const dt = new Date(d);
+    return dt >= cutoffOld && dt <= cutoffNew;
+  });
+  if (!prior.length) {
+    const first = entries[0][1];
+    return { delta: latest - first, label: 'since start' };
+  }
+  const avg = prior.reduce((s, [, v]) => s + v, 0) / prior.length;
+  return { delta: latest - avg, label: 'vs last week' };
+}
+
+function getWeightSparkData() {
+  const t = todayStr();
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(t); d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    days.push({ key, value: state.weights[key] ?? null });
+  }
+  return days;
+}
+
+function renderWeight() {
+  const t = todayStr();
+  const unit = state.weightUnit;
+  const today = state.weights[t];
+  const entries = Object.entries(state.weights).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  const latest = entries.length ? entries[entries.length - 1][1] : null;
+  const display = today ?? latest;
+
+  const trend = getWeightTrend();
+  let trendHtml = '';
+  if (trend && Math.abs(trend.delta) >= 0.1) {
+    const cls = trend.delta > 0 ? 'up' : 'down';
+    const sign = trend.delta > 0 ? '+' : '';
+    trendHtml = `<span class="trend ${cls}">${sign}${trend.delta.toFixed(1)} ${unit} <span style="color:#555;font-weight:500">· ${trend.label}</span></span>`;
+  } else if (trend) {
+    trendHtml = `<span class="trend flat">no change</span>`;
+  }
+
+  const spark = getWeightSparkData();
+  const vals = spark.map(d => d.value).filter(v => v != null);
+  let sparkHtml = '';
+  if (vals.length >= 2) {
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const range = max - min || 1;
+    sparkHtml = `<div class="weight-spark">` +
+      spark.map(d => {
+        if (d.value == null) return `<div class="bar" style="opacity:0.15;height:3px"></div>`;
+        const h = 6 + ((d.value - min) / range) * 26;
+        const isToday = d.key === t;
+        return `<div class="bar ${isToday?'today':''}" style="height:${h}px"></div>`;
+      }).join('') +
+      `</div><div class="weight-sub">Last 14 days</div>`;
+  }
+
+  const card = document.getElementById('weightCard');
+  if (today != null) {
+    card.innerHTML = `
+      <div class="weight-top">
+        <span class="lbl">Today</span>
+        ${trendHtml}
+      </div>
+      <div class="weight-big">
+        <span class="num">${today.toFixed(1)}</span>
+        <span class="unit">${unit}</span>
+      </div>
+      <div class="weight-row">
+        <button class="weight-edit" id="weightEditBtn">Edit</button>
+        <button class="weight-edit" id="weightDeleteBtn" style="color:#f87171">Remove</button>
+      </div>
+      ${sparkHtml}`;
+    document.getElementById('weightEditBtn').onclick = () => {
+      card.dataset.editing = '1';
+      renderWeightEditor(display);
+    };
+    document.getElementById('weightDeleteBtn').onclick = deleteTodayWeight;
+  } else {
+    renderWeightEditor(display);
+  }
+}
+
+function renderWeightEditor(prefill) {
+  const card = document.getElementById('weightCard');
+  const unit = state.weightUnit;
+  const trend = getWeightTrend();
+  let trendHtml = '';
+  if (trend && Math.abs(trend.delta) >= 0.1) {
+    const cls = trend.delta > 0 ? 'up' : 'down';
+    const sign = trend.delta > 0 ? '+' : '';
+    trendHtml = `<span class="trend ${cls}">${sign}${trend.delta.toFixed(1)} ${unit}</span>`;
+  }
+  const spark = getWeightSparkData();
+  const vals = spark.map(d => d.value).filter(v => v != null);
+  let sparkHtml = '';
+  if (vals.length >= 2) {
+    const min = Math.min(...vals), max = Math.max(...vals), range = max - min || 1;
+    const t = todayStr();
+    sparkHtml = `<div class="weight-spark">` +
+      spark.map(d => {
+        if (d.value == null) return `<div class="bar" style="opacity:0.15;height:3px"></div>`;
+        const h = 6 + ((d.value - min) / range) * 26;
+        return `<div class="bar ${d.key===t?'today':''}" style="height:${h}px"></div>`;
+      }).join('') + `</div><div class="weight-sub">Last 14 days</div>`;
+  }
+
+  card.innerHTML = `
+    <div class="weight-top">
+      <span class="lbl">Log today</span>
+      ${trendHtml}
+    </div>
+    ${prefill ? `<div class="weight-big"><span class="num" style="color:#555">${prefill.toFixed(1)}</span><span class="unit">${unit} · last</span></div>` : `<div class="weight-big"><span class="num empty">—</span><span class="unit">${unit}</span></div>`}
+    <div class="weight-row">
+      <input class="weight-in" id="weightInput" type="number" inputmode="decimal" step="0.1" placeholder="${prefill ? prefill.toFixed(1) : 'weight'}" />
+      <button class="weight-save" id="weightSaveBtn">Save</button>
+    </div>
+    ${sparkHtml}`;
+
+  const input = document.getElementById('weightInput');
+  const btn = document.getElementById('weightSaveBtn');
+  const submit = () => {
+    if (logWeight(input.value)) { /* rerender handled */ }
+    else { input.focus(); }
+  };
+  btn.onclick = submit;
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  setTimeout(() => input.focus(), 0);
+}
+
 function renderHome() {
   // Header stats
   const L = levelFromXp(state.xp);
@@ -1209,6 +1471,9 @@ function renderHome() {
   else if (s > 0) sub = 'Finish today to keep it alive';
   else sub = 'Finish today\u2019s routine to start';
   document.getElementById('streakSub').textContent = sub;
+
+  // Weight card
+  renderWeight();
 
   // Morning list
   const todayMorning = state.morning[t] || {};
